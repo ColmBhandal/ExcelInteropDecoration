@@ -1,0 +1,39 @@
+name: .NET Core
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ develop ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '6.0.x'
+    - name: Update version
+      run: cd BuildTools && chmod +x *.sh && ./UpdateVersion.sh
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore --verbosity normal
+    - name: Test
+      run: dotnet test --configuration Release --no-restore --no-build --verbosity normal
+    - name: Package
+      run: cd ExcelInteropDecoration && dotnet pack ExcelInteropDecoration.csproj --configuration Release --no-restore --no-build
+    - name: Upload package
+      uses: actions/upload-artifact@v2
+      with:
+        name: NuGet Package
+        path: ExcelInteropDecoration/bin/Release/*.nupkg
